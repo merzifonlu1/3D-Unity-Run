@@ -32,25 +32,52 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        anim.SetFloat("Velocityx", rb.velocity.x);
-        anim.SetFloat("Velocityz", rb.velocity.z);
-
-        if (rb.velocity.magnitude > 3)
-        {
-            anim.SetBool("Walking", false);
-            anim.SetBool("Running", true);
-        }
-        else if (rb.velocity.magnitude <= 3.1 && rb.velocity.magnitude >= .1f)
+        if (aiming)
         {
             anim.SetBool("Running", false);
-            anim.SetBool("Walking", true);
+            anim.SetBool("Walking", false);
+            OnAimAnimations();
         }
         else
         {
-            anim.SetBool("Running", false);
-            anim.SetBool("Walking", false);
-        }
+            anim.SetLayerWeight(1, 0);
 
+            if (rb.velocity.magnitude > 3)
+            {
+                anim.SetBool("Walking", false);
+                anim.SetBool("Running", true);
+            }
+            else if (rb.velocity.magnitude <= 3.02 && rb.velocity.magnitude >= .02f)
+            {
+                anim.SetBool("Running", false);
+                anim.SetBool("Walking", true);
+            }
+            else
+            {
+                anim.SetBool("Running", false);
+                anim.SetBool("Walking", false);
+            }
+        }
+    }
+
+    private void OnAimAnimations()
+    {
+        anim.SetLayerWeight(1,1);
+
+        var (success, position) = GetMousePosition();
+
+        if (success)
+        {
+            float MouseDirecX = Mathf.Clamp(position.x - transform.position.x, -1f, 1f);
+
+            float MouseDirecZ = Mathf.Clamp(position.z - transform.position.z, -1f, 1f);
+
+            anim.SetFloat("MouseDirecx", MouseDirecX);
+            anim.SetFloat("MouseDirecz", MouseDirecZ);
+
+            anim.SetFloat("Velocityx", rb.velocity.x);
+            anim.SetFloat("Velocityz", rb.velocity.z);
+        }
     }
 
     private void Walk()
@@ -85,13 +112,12 @@ public class PlayerMovement : MonoBehaviour
             SprintValue = 1;
     }
 
-    //------------------------------------- Look At Mouse Start -------------------------------------
-    [SerializeField] private LayerMask Ground;
+    //------------------------------------- Look At Mouse Start -------------------------------------   
     private bool aiming = false;
     private (bool success, Vector3 position) GetMousePosition()
     {
         Ray mousepos = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(mousepos, out var hitInfo, Mathf.Infinity, Ground))
+        if (Physics.Raycast(mousepos, out var hitInfo, Mathf.Infinity))
         {
             return (success: true, position: hitInfo.point);
         }
@@ -110,16 +136,6 @@ public class PlayerMovement : MonoBehaviour
             Direction.y = 0;
             transform.forward = Direction;
         }
-        //------------------------------------- Bu da bir yol ama yukarýdaki daha düzenli hali -------------------------------------
-        //Ray mousepos = Camera.main.ScreenPointToRay(Input.mousePosition);
-        //Physics.Raycast(mousepos, out var hitInfo, Mathf.Infinity, Ground);
-        //if (hitInfo.collider != null)
-        //{
-        //    Vector3 Direction = hitInfo.point - transform.position;
-        //    Direction.y = 0;
-        //    transform.forward = Direction;
-        //}
-        //--------------------------------------------------------------------------------------------------------------------------
     }
     //------------------------------------- Look At Mouse End -------------------------------------
 }
