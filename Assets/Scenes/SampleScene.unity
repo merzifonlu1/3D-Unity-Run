@@ -651,7 +651,12 @@ Animator:
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
-  m_WarningMessage: 
+  m_WarningMessage: "\nBinding warning: Some generic clip(s) animate transforms that
+    are already bound by a Humanoid avatar. These transforms can only be changed
+    by Humanoid clips.\n\tTransform 'Right Arm'\n\tTransform 'Right Hand Index 1'\n\tTransform
+    'Left Arm'\n\tTransform 'Left Forearm'\n\tTransform 'Left Hand Middle 1'\n\tTransform
+    'Right Forearm'\n\tTransform 'Right Arm'\n\tTransform 'Right Hand Index 1'\n\tTransform
+    'Left Arm'\n\tTransform 'Left Forearm'\n\tand more ..."
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -4262,7 +4267,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5786097809945402360}
-  m_LocalRotation: {x: 0.15184113, y: 0.148675, z: -0.7952039, w: -0.5678827}
+  m_LocalRotation: {x: 0.27519166, y: 0.093505174, z: -0.81427705, w: -0.50247306}
   m_LocalPosition: {x: 0.0054559093, y: 0.000109351706, z: 0.010492675}
   m_LocalScale: {x: 0.05524084, y: 0.055240836, z: 0.055240847}
   m_ConstrainProportionsScale: 0
@@ -4278,7 +4283,7 @@ Transform:
   - {fileID: 643944348}
   m_Father: {fileID: 3197529212406278006}
   m_RootOrder: -1
-  m_LocalEulerAnglesHint: {x: -4.429, y: 19.659, z: -351.286}
+  m_LocalEulerAnglesHint: {x: -7.139, y: -33.118, z: -241.231}
 --- !u!1 &6597102312588281313
 GameObject:
   m_ObjectHideFlags: 0
