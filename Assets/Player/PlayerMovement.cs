@@ -135,6 +135,7 @@ public class PlayerMovement : MonoBehaviour
             var Direction = position - transform.position;
             Direction.y = 0;
             transform.forward = Direction;
+            transform.Rotate(new Vector3(0,31.2f,0));         
         }
     }
     //------------------------------------- Look At Mouse End -------------------------------------
