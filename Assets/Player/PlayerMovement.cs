@@ -16,7 +16,8 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 Direc;
 
     public GameObject LookAtObject;
-    public GameObject RigLayerAim;
+    public GameObject RigLayerWeaponAim;
+    public GameObject RigLayerBodyAim;
 
     public float ADSSpeed;
     private void Start()
@@ -29,7 +30,10 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetMouseButton(1))
             LookAtMouse();
         else
+        {
             aiming = false;
+        }
+     
         
         Sprint();
         Walk();
@@ -62,19 +66,21 @@ public class PlayerMovement : MonoBehaviour
             }
         }
 
-        if (RigLayerAim.GetComponent<Rig>().weight == 1 && anim.GetLayerWeight(1) == 1 && !aiming)
+        if (RigLayerWeaponAim.GetComponent<Rig>().weight == 1 && anim.GetLayerWeight(1) == 1 && !aiming)
         {
             StartCoroutine(ChangeAnimWeight(ADSSpeed));
-            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed));
+            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed, RigLayerWeaponAim));
+            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed, RigLayerBodyAim));
         }
     }
 
     private void OnAimAnimations()
     {
-        if (RigLayerAim.GetComponent<Rig>().weight == 0 && anim.GetLayerWeight(1) == 0)
+        if (RigLayerWeaponAim.GetComponent<Rig>().weight == 0 && anim.GetLayerWeight(1) == 0)
         {
             StartCoroutine(ChangeAnimWeight(ADSSpeed));
-            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed));
+            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed, RigLayerWeaponAim));
+            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed, RigLayerBodyAim));
         }
 
         var (success, position) = GetMousePosition();
@@ -156,9 +162,9 @@ public class PlayerMovement : MonoBehaviour
 
     //------------------------------------- Layer Weights ------------------------------------------
     private float endValue;
-    private IEnumerator ChangeRigLayerAimWeight(float time)
+    private IEnumerator ChangeRigLayerAimWeight(float time, GameObject weightedLayer)
     {
-        float startValue = RigLayerAim.GetComponent<Rig>().weight;
+        float startValue = weightedLayer.GetComponent<Rig>().weight;
 
         if (startValue == 0)
             endValue = 1f;
@@ -170,10 +176,14 @@ public class PlayerMovement : MonoBehaviour
         while (elapsedTime < time)
         {
             elapsedTime += Time.deltaTime;
-            RigLayerAim.GetComponent<Rig>().weight = Mathf.Lerp(startValue, endValue, Mathf.SmoothStep(0, 1, elapsedTime / time));
+            weightedLayer.GetComponent<Rig>().weight = Mathf.Lerp(startValue, endValue, Mathf.SmoothStep(0, 1, elapsedTime / time));
             yield return null;
         }
-        RigLayerAim.GetComponent<Rig>().weight = endValue;
+        //if (endValue == 0f)
+        //{
+        //    LookAtObject.transform.localPosition = new Vector3(0, 0, 13);
+        //}
+        weightedLayer.GetComponent<Rig>().weight = endValue;
     }
     private IEnumerator ChangeAnimWeight(float time)
     {
