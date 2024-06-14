@@ -20,18 +20,22 @@ public class PlayerMovement : MonoBehaviour
     public GameObject RigLayerBodyAim;
 
     public float ADSSpeed;
+
+    private M4A4Script M4A4Script;
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         anim = transform.GetChild(0).GetComponent<Animator>();
+        M4A4Script = GetComponentInChildren<M4A4Script>();
     }
     private void Update()
     {
-        if (Input.GetMouseButton(1))
-            LookAtMouse();
+        if (Input.GetButton("Fire2"))
+            AimOn();
         else
         {
             aiming = false;
+            M4A4Script.StopFire();
         }
      
         
@@ -133,10 +137,15 @@ public class PlayerMovement : MonoBehaviour
 
     //------------------------------------- Look At Mouse Start -------------------------------------   
     private bool aiming = false;
+   
     private (bool success, Vector3 position) GetMousePosition()
     {
         Ray mousepos = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(mousepos, out var hitInfo, Mathf.Infinity))
+
+        int playerLayer = LayerMask.NameToLayer("Player");
+        int layerMask = ~(1 << playerLayer);
+
+        if (Physics.Raycast(mousepos, out var hitInfo, Mathf.Infinity, layerMask))
         {
             return (success: true, position: hitInfo.point);
         }
@@ -145,7 +154,7 @@ public class PlayerMovement : MonoBehaviour
             return (success: false, position: Vector3.zero);
         }
     }
-    private void LookAtMouse()
+    private void AimOn()
     {
         aiming = true;
         var (success, position) = GetMousePosition();
@@ -156,6 +165,15 @@ public class PlayerMovement : MonoBehaviour
             Direction.y = 0;
             transform.forward = Direction;
             transform.Rotate(new Vector3(0, 31.2f, 0));
+        }
+
+        if (Input.GetButtonDown("Fire1"))
+        {
+            M4A4Script.StartFire();
+        }
+        if (Input.GetButtonUp("Fire1"))
+        {
+            M4A4Script.StopFire();
         }
     }
     //----------------------------------------------------------------------------------------------
@@ -179,10 +197,7 @@ public class PlayerMovement : MonoBehaviour
             weightedLayer.GetComponent<Rig>().weight = Mathf.Lerp(startValue, endValue, Mathf.SmoothStep(0, 1, elapsedTime / time));
             yield return null;
         }
-        //if (endValue == 0f)
-        //{
-        //    LookAtObject.transform.localPosition = new Vector3(0, 0, 13);
-        //}
+
         weightedLayer.GetComponent<Rig>().weight = endValue;
     }
     private IEnumerator ChangeAnimWeight(float time)
