@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Animations.Rigging;
 using UnityEngine.UIElements;
 
 public class PlayerMovement : MonoBehaviour
@@ -14,6 +15,10 @@ public class PlayerMovement : MonoBehaviour
     private Animator anim;
     private Vector3 Direc;
 
+    public GameObject LookAtObject;
+    public GameObject RigLayerAim;
+
+    public float ADSSpeed;
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -40,8 +45,6 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            anim.SetLayerWeight(1, 0);
-
             if (rb.velocity.magnitude > 3)
             {
                 anim.SetBool("Walking", false);
@@ -58,11 +61,21 @@ public class PlayerMovement : MonoBehaviour
                 anim.SetBool("Walking", false);
             }
         }
+
+        if (RigLayerAim.GetComponent<Rig>().weight == 1 && anim.GetLayerWeight(1) == 1 && !aiming)
+        {
+            StartCoroutine(ChangeAnimWeight(ADSSpeed));
+            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed));
+        }
     }
 
     private void OnAimAnimations()
     {
-        anim.SetLayerWeight(1,1);
+        if (RigLayerAim.GetComponent<Rig>().weight == 0 && anim.GetLayerWeight(1) == 0)
+        {
+            StartCoroutine(ChangeAnimWeight(ADSSpeed));
+            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed));
+        }
 
         var (success, position) = GetMousePosition();
 
@@ -132,11 +145,54 @@ public class PlayerMovement : MonoBehaviour
         var (success, position) = GetMousePosition();
         if (success)
         {
+            LookAtObject.transform.position = position;
             var Direction = position - transform.position;
             Direction.y = 0;
             transform.forward = Direction;
-            transform.Rotate(new Vector3(0,31.2f,0));         
+            transform.Rotate(new Vector3(0, 31.2f, 0));
         }
     }
-    //------------------------------------- Look At Mouse End -------------------------------------
+    //----------------------------------------------------------------------------------------------
+
+    //------------------------------------- Layer Weights ------------------------------------------
+    private float endValue;
+    private IEnumerator ChangeRigLayerAimWeight(float time)
+    {
+        float startValue = RigLayerAim.GetComponent<Rig>().weight;
+
+        if (startValue == 0)
+            endValue = 1f;
+        else if (startValue == 1)
+            endValue = 0f;
+
+        float elapsedTime = 0f;
+
+        while (elapsedTime < time)
+        {
+            elapsedTime += Time.deltaTime;
+            RigLayerAim.GetComponent<Rig>().weight = Mathf.Lerp(startValue, endValue, Mathf.SmoothStep(0, 1, elapsedTime / time));
+            yield return null;
+        }
+        RigLayerAim.GetComponent<Rig>().weight = endValue;
+    }
+    private IEnumerator ChangeAnimWeight(float time)
+    {
+        float startValue = anim.GetLayerWeight(1);
+
+        if (startValue == 0)
+            endValue = 1f;
+        else if (startValue == 1)
+            endValue = 0f;
+
+        float elapsedTime = 0f;
+
+        while (elapsedTime < time)
+        {
+            elapsedTime += Time.deltaTime;            
+            anim.SetLayerWeight(1, Mathf.Lerp(startValue, endValue, Mathf.SmoothStep(0, 1, elapsedTime / time)));
+            yield return null;
+        }
+        anim.SetLayerWeight(1, endValue);
+    }
+    //----------------------------------------------------------------------------------------------
 }
