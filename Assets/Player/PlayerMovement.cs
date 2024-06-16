@@ -171,6 +171,10 @@ public class PlayerMovement : MonoBehaviour
         {
             M4A4Script.StartFire();
         }
+        if (M4A4Script.isFiring)
+        {
+            M4A4Script.UpdateFiring(Time.deltaTime);
+        }
         if (Input.GetButtonUp("Fire1"))
         {
             M4A4Script.StopFire();
