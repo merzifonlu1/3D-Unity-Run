@@ -136,7 +136,7 @@ public class PlayerMovement : MonoBehaviour
     }
 
     //------------------------------------- Look At Mouse Start -------------------------------------   
-    private bool aiming = false;
+    public bool aiming = false;
    
     private (bool success, Vector3 position) GetMousePosition()
     {
@@ -167,18 +167,6 @@ public class PlayerMovement : MonoBehaviour
             transform.Rotate(new Vector3(0, 31.2f, 0));
         }
 
-        if (Input.GetButtonDown("Fire1"))
-        {
-            M4A4Script.StartFire();
-        }
-        if (M4A4Script.isFiring)
-        {
-            M4A4Script.UpdateFiring(Time.deltaTime);
-        }
-        if (Input.GetButtonUp("Fire1"))
-        {
-            M4A4Script.StopFire();
-        }
     }
     //----------------------------------------------------------------------------------------------
 
