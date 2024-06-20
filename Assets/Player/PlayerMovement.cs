@@ -32,13 +32,11 @@ public class PlayerMovement : MonoBehaviour
     {
         if (Input.GetButton("Fire2"))
             AimOn();
-        else
+        else if (Input.GetButtonUp("Fire2"))
         {
             aiming = false;
-            M4A4Script.StopFire();
         }
-     
-        
+            
         Sprint();
         Walk();
     }
@@ -105,7 +103,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Walk()
     {
-        TotalSpeed = BaseSpeed * SprintValue ;
+        TotalSpeed = BaseSpeed * SprintValue;
         Direc.x = Input.GetAxisRaw("Horizontal");
         Direc.z = Input.GetAxisRaw("Vertical");
         Direc.Normalize();
@@ -136,7 +134,7 @@ public class PlayerMovement : MonoBehaviour
     }
 
     //------------------------------------- Look At Mouse Start -------------------------------------   
-    private bool aiming = false;
+    public bool aiming = false;
    
     private (bool success, Vector3 position) GetMousePosition()
     {
@@ -167,18 +165,6 @@ public class PlayerMovement : MonoBehaviour
             transform.Rotate(new Vector3(0, 31.2f, 0));
         }
 
-        if (Input.GetButtonDown("Fire1"))
-        {
-            M4A4Script.StartFire();
-        }
-        if (M4A4Script.isFiring)
-        {
-            M4A4Script.UpdateFiring(Time.deltaTime);
-        }
-        if (Input.GetButtonUp("Fire1"))
-        {
-            M4A4Script.StopFire();
-        }
     }
     //----------------------------------------------------------------------------------------------
 

@@ -5,6 +5,8 @@ using UnityEngine;
 public class M4A4Script : MonoBehaviour
 {
     [SerializeField] private AudioSource myAudio;
+    private WeaponEquip wEquip;
+    private PlayerMovement pMovement;
 
     public bool isFiring = false;
     public int fireRate = 25;
@@ -22,6 +24,33 @@ public class M4A4Script : MonoBehaviour
 
     Ray ray;
     RaycastHit hitInfo;
+    private void Start()
+    {
+        wEquip = GameObject.FindWithTag("Player").GetComponent<WeaponEquip>();
+        pMovement = GameObject.FindWithTag("Player").GetComponent<PlayerMovement>();
+    }
+    private void Update()
+    {
+        if (wEquip.hasWeapon && pMovement.aiming)
+        {
+            if (Input.GetButtonDown("Fire1"))
+            {
+                StartFire();
+            }
+            if (isFiring)
+            {
+                UpdateFiring(Time.deltaTime);
+            }
+            if (Input.GetButtonUp("Fire1"))
+            {
+                StopFire();
+            }
+        }
+        if (!pMovement.aiming) 
+        {
+            StopFire();
+        }
+    }
     public void StartFire()
     {
         isFiring = true;
