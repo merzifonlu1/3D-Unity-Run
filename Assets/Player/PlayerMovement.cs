@@ -2,12 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
-using UnityEngine.UIElements;
+using UnityEngine.Serialization;
 
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] private float BaseSpeed;
-    [SerializeField] private float SprintCarpan�;
+    [SerializeField, FormerlySerializedAs("SprintCarpanı")] private float SprintCarpani;
     private float TotalSpeed;
     private float SprintValue;
 
@@ -22,21 +22,24 @@ public class PlayerMovement : MonoBehaviour
     public float ADSSpeed;
 
     private M4A4Script M4A4Script;
+    private Rig WeaponAimRig;
+    private Rig BodyAimRig;
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         anim = transform.GetChild(0).GetComponent<Animator>();
         M4A4Script = GetComponentInChildren<M4A4Script>();
+        WeaponAimRig = RigLayerWeaponAim.GetComponent<Rig>();
+        BodyAimRig = RigLayerBodyAim.GetComponent<Rig>();
     }
     private void Update()
     {
         if (Input.GetButton("Fire2"))
             AimOn();
-        else if (Input.GetButtonUp("Fire2"))
-        {
+        else
             aiming = false;
-        }
-            
+
+        UpdateAimWeights();
         Sprint();
         Walk();
     }
@@ -51,12 +54,12 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            if (rb.velocity.magnitude > 3)
+            if (rb.linearVelocity.magnitude > 3)
             {
                 anim.SetBool("Walking", false);
                 anim.SetBool("Running", true);
             }
-            else if (rb.velocity.magnitude <= 3.02 && rb.velocity.magnitude >= .02f)
+            else if (rb.linearVelocity.magnitude <= 3.02 && rb.linearVelocity.magnitude >= .02f)
             {
                 anim.SetBool("Running", false);
                 anim.SetBool("Walking", true);
@@ -67,24 +70,10 @@ public class PlayerMovement : MonoBehaviour
                 anim.SetBool("Walking", false);
             }
         }
-
-        if (RigLayerWeaponAim.GetComponent<Rig>().weight == 1 && anim.GetLayerWeight(1) == 1 && !aiming)
-        {
-            StartCoroutine(ChangeAnimWeight(ADSSpeed));
-            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed, RigLayerWeaponAim));
-            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed, RigLayerBodyAim));
-        }
     }
 
     private void OnAimAnimations()
     {
-        if (RigLayerWeaponAim.GetComponent<Rig>().weight == 0 && anim.GetLayerWeight(1) == 0)
-        {
-            StartCoroutine(ChangeAnimWeight(ADSSpeed));
-            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed, RigLayerWeaponAim));
-            StartCoroutine(ChangeRigLayerAimWeight(ADSSpeed, RigLayerBodyAim));
-        }
-
         var (success, position) = GetMousePosition();
 
         if (success)
@@ -96,8 +85,8 @@ public class PlayerMovement : MonoBehaviour
             anim.SetFloat("MouseDirecx", MouseDirecX);
             anim.SetFloat("MouseDirecz", MouseDirecZ);
 
-            anim.SetFloat("Velocityx", rb.velocity.x);
-            anim.SetFloat("Velocityz", rb.velocity.z);
+            anim.SetFloat("Velocityx", rb.linearVelocity.x);
+            anim.SetFloat("Velocityz", rb.linearVelocity.z);
         }
     }
 
@@ -107,7 +96,7 @@ public class PlayerMovement : MonoBehaviour
         Direc.x = Input.GetAxisRaw("Horizontal");
         Direc.z = Input.GetAxisRaw("Vertical");
         Direc.Normalize();
-        rb.velocity = new Vector3(Direc.x * TotalSpeed, rb.velocity.y, Direc.z * TotalSpeed);
+        rb.linearVelocity = new Vector3(Direc.x * TotalSpeed, rb.linearVelocity.y, Direc.z * TotalSpeed);
         if (!aiming)
             Rotation();
 
@@ -128,14 +117,14 @@ public class PlayerMovement : MonoBehaviour
     private void Sprint()
     {
         if (Input.GetKey(KeyCode.LeftShift))
-            SprintValue = SprintCarpan�;
+            SprintValue = SprintCarpani;
         else
             SprintValue = 1;
     }
 
-    //------------------------------------- Look At Mouse Start -------------------------------------   
+    //------------------------------------- Look At Mouse Start -------------------------------------
     public bool aiming = false;
-   
+
     private (bool success, Vector3 position) GetMousePosition()
     {
         Ray mousepos = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -169,45 +158,17 @@ public class PlayerMovement : MonoBehaviour
     //----------------------------------------------------------------------------------------------
 
     //------------------------------------- Layer Weights ------------------------------------------
-    private float endValue;
-    private IEnumerator ChangeRigLayerAimWeight(float time, GameObject weightedLayer)
+    // Rig'ler ve animator katmanı tek bir blend değerinden beslenir; nişan yarıda bırakılırsa blend kaldığı yerden geri döner.
+    private float aimBlend;
+    private void UpdateAimWeights()
     {
-        float startValue = weightedLayer.GetComponent<Rig>().weight;
+        float target = aiming ? 1f : 0f;
+        aimBlend = ADSSpeed > 0f ? Mathf.MoveTowards(aimBlend, target, Time.deltaTime / ADSSpeed) : target;
 
-        if (startValue == 0)
-            endValue = 1f;
-        else if (startValue == 1)
-            endValue = 0f;
-
-        float elapsedTime = 0f;
-
-        while (elapsedTime < time)
-        {
-            elapsedTime += Time.deltaTime;
-            weightedLayer.GetComponent<Rig>().weight = Mathf.Lerp(startValue, endValue, Mathf.SmoothStep(0, 1, elapsedTime / time));
-            yield return null;
-        }
-
-        weightedLayer.GetComponent<Rig>().weight = endValue;
-    }
-    private IEnumerator ChangeAnimWeight(float time)
-    {
-        float startValue = anim.GetLayerWeight(1);
-
-        if (startValue == 0)
-            endValue = 1f;
-        else if (startValue == 1)
-            endValue = 0f;
-
-        float elapsedTime = 0f;
-
-        while (elapsedTime < time)
-        {
-            elapsedTime += Time.deltaTime;            
-            anim.SetLayerWeight(1, Mathf.Lerp(startValue, endValue, Mathf.SmoothStep(0, 1, elapsedTime / time)));
-            yield return null;
-        }
-        anim.SetLayerWeight(1, endValue);
+        float weight = Mathf.SmoothStep(0f, 1f, aimBlend);
+        WeaponAimRig.weight = weight;
+        BodyAimRig.weight = weight;
+        anim.SetLayerWeight(1, weight);
     }
     //----------------------------------------------------------------------------------------------
 }
