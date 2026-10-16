@@ -412,6 +412,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   BaseSpeed: 3
   SprintCarpani: 2
+  slowWalkMultiplier: 0.5
+  crouchMultiplier: 0.5
+  proneMultiplier: 0.25
+  turnSpeed: 900
+  proneTurnSpeed: 200
+  sprintKey: 304
+  slowWalkKey: 120
+  crouchKey: 99
+  proneKey: 122
+  crouchHeight: 1.2
+  proneLength: 1.7
   LookAtObject: {fileID: 1750660124}
   RigLayerWeaponAim: {fileID: 376605186}
   RigLayerBodyAim: {fileID: 2024938454}
@@ -7280,7 +7291,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1626903945}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.3420201, y: 0, z: 0, w: 0.9396927}
+  m_LocalRotation: {x: 0.3314136, y: 0.46193975, z: -0.19134173, w: 0.8001031}
   m_LocalPosition: {x: 0, y: 6.656876, z: -7.660445}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -9583,6 +9594,7 @@ GameObject:
   - component: {fileID: 773183517}
   - component: {fileID: 773183519}
   - component: {fileID: 773183518}
+  - component: {fileID: 919132148720002380}
   m_Layer: 7
   m_Name: Banana Man@Idle (1)
   m_TagString: Untagged
@@ -9590,6 +9602,19 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &919132148720002380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919132148720002379}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48adb9f26e63d3040aab5b28a75c623e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnimationHandler
+  speedDamp: 0.1
 --- !u!4 &922944786232426252
 Transform:
   m_ObjectHideFlags: 0

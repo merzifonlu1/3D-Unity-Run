@@ -25,7 +25,6 @@ public class TrainBoarding : MonoBehaviour
     private TrainSeat[] seats;
     private Rigidbody playerBody;
     private Collider playerCollider;
-    private Animator playerAnimator;
     private WeaponEquip playerWeapons;
     private Transform playerParent;
 
@@ -53,7 +52,6 @@ public class TrainBoarding : MonoBehaviour
         {
             playerBody = player.GetComponent<Rigidbody>();
             playerCollider = player.GetComponent<Collider>();
-            playerAnimator = player.GetComponentInChildren<Animator>();
             playerWeapons = player.GetComponent<WeaponEquip>();
         }
     }
@@ -152,13 +150,7 @@ public class TrainBoarding : MonoBehaviour
 
     private void Sit(TrainSeat seat)
     {
-        if (playerAnimator != null)
-        {
-            playerAnimator.SetBool("Walking", false);
-            playerAnimator.SetBool("Running", false);
-        }
-        player.aiming = false;
-        player.enabled = false;
+        player.EnterSeat();
         if (playerWeapons != null)
             playerWeapons.enabled = false;
 
@@ -187,7 +179,7 @@ public class TrainBoarding : MonoBehaviour
         player.transform.SetParent(playerParent, true);
         playerBody.isKinematic = false;
         TeleportPlayer(standPosition);
-        player.enabled = true;
+        player.ExitSeat();
         if (playerWeapons != null)
             playerWeapons.enabled = true;
 

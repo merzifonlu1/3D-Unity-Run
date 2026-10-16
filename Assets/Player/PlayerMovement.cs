@@ -1,129 +1,247 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
 using UnityEngine.Serialization;
 
+// Oyuncu hareketinin baglami: girdi, Rigidbody, collider ve nisan burada.
+// Hareket kurallari PlayerState'ten tureyen durumlarda (Assets/Player/States):
+// WalkState, SprintState, SlowWalkState, CrouchState, ProneState, SeatedState.
 public class PlayerMovement : MonoBehaviour
 {
+    [Header("Hizlar")]
+    [Tooltip("Normal yuruyus hizi (m/s)")]
     [SerializeField] private float BaseSpeed;
     [SerializeField, FormerlySerializedAs("SprintCarpanı")] private float SprintCarpani;
-    private float TotalSpeed;
-    private float SprintValue;
+    [SerializeField] private float slowWalkMultiplier = 0.5f;
+    [SerializeField] private float crouchMultiplier = 0.5f;
+    [SerializeField] private float proneMultiplier = 0.25f;
+    [Tooltip("Donus hizi (derece/saniye)")]
+    [SerializeField] private float turnSpeed = 900f;
+    [SerializeField] private float proneTurnSpeed = 200f;
 
-    private Rigidbody rb;
-    private Animator anim;
-    private Vector3 Direc;
+    [Header("Tuslar")]
+    [SerializeField] private KeyCode sprintKey = KeyCode.LeftShift;
+    [SerializeField] private KeyCode slowWalkKey = KeyCode.X;
+    [SerializeField] private KeyCode crouchKey = KeyCode.C;
+    [SerializeField] private KeyCode proneKey = KeyCode.Z;
 
+    [Header("Collider (ayakta, comelme, yuzustu)")]
+    [SerializeField] private float crouchHeight = 1.2f;
+    [SerializeField] private float proneLength = 1.7f;
+
+    [Header("Nisan")]
     public GameObject LookAtObject;
     public GameObject RigLayerWeaponAim;
     public GameObject RigLayerBodyAim;
-
     public float ADSSpeed;
 
-    private M4A4Script M4A4Script;
+    private Rigidbody rb;
+    private CapsuleCollider capsule;
+    private WeaponEquip weapons;
     private Rig WeaponAimRig;
     private Rig BodyAimRig;
-    private void Start()
+
+    private float standHeight;
+    private Vector3 standCenter;
+    private float feetY;
+
+    public float WalkSpeed => BaseSpeed;
+    public float SprintMultiplier => SprintCarpani;
+    public float SlowWalkMultiplier => slowWalkMultiplier;
+    public float CrouchMultiplier => crouchMultiplier;
+    public float ProneMultiplier => proneMultiplier;
+    public float TurnSpeed => turnSpeed;
+    public float ProneTurnSpeed => proneTurnSpeed;
+
+    // Kameraya gore hareket yonu (uzunlugu 0..1).
+    public Vector3 MoveInput { get; private set; }
+    public bool SprintHeld { get; private set; }
+    public bool SprintPressed { get; private set; }
+    public bool SlowWalkHeld { get; private set; }
+    public bool CrouchPressed { get; private set; }
+    public bool PronePressed { get; private set; }
+
+    public AnimationHandler Animation { get; private set; }
+    public PlayerState CurrentState { get; private set; }
+    public WalkState Walk { get; private set; }
+    public SprintState Sprint { get; private set; }
+    public SlowWalkState SlowWalk { get; private set; }
+    public CrouchState Crouch { get; private set; }
+    public ProneState Prone { get; private set; }
+    public SeatedState Seated { get; private set; }
+
+    private void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        anim = transform.GetChild(0).GetComponent<Animator>();
-        M4A4Script = GetComponentInChildren<M4A4Script>();
+        capsule = GetComponent<CapsuleCollider>();
+        weapons = GetComponent<WeaponEquip>();
+
+        var animator = transform.GetChild(0).GetComponent<Animator>();
+        Animation = animator.GetComponent<AnimationHandler>();
+        if (Animation == null)
+            Animation = animator.gameObject.AddComponent<AnimationHandler>();
+
+        standHeight = capsule.height;
+        standCenter = capsule.center;
+        feetY = standCenter.y - standHeight / 2f;
+
+        Walk = new WalkState(this);
+        Sprint = new SprintState(this);
+        SlowWalk = new SlowWalkState(this);
+        Crouch = new CrouchState(this);
+        Prone = new ProneState(this);
+        Seated = new SeatedState(this);
+    }
+
+    private void Start()
+    {
         WeaponAimRig = RigLayerWeaponAim.GetComponent<Rig>();
         BodyAimRig = RigLayerBodyAim.GetComponent<Rig>();
+        ChangeState(Walk);
     }
+
     private void Update()
     {
-        if (Input.GetButton("Fire2"))
+        ReadInput();
+
+        if (CurrentState.CanAim && Input.GetButton("Fire2"))
             AimOn();
         else
             aiming = false;
 
+        CurrentState.Tick();
         UpdateAimWeights();
-        Sprint();
-        Walk();
+
+        if (aiming)
+            OnAimAnimations();
+        Animation.SetLocomotion(MoveInput.magnitude * CurrentState.Gait, CurrentState.Stance);
     }
 
     private void FixedUpdate()
     {
-        if (aiming)
+        CurrentState.FixedTick();
+    }
+
+    public void ChangeState(PlayerState next)
+    {
+        if (next == CurrentState)
+            return;
+        CurrentState?.Exit();
+        CurrentState = next;
+        CurrentState.Enter();
+    }
+
+    // ------------------------------------------------------------------ Tren koltugu
+    // TrainBoarding oturtup kaldirirken cagirir.
+    public void EnterSeat()
+    {
+        aiming = false;
+        aimBlend = 0f;
+        UpdateAimWeights();
+        MoveInput = Vector3.zero;
+        ChangeState(Seated);
+    }
+
+    public void ExitSeat()
+    {
+        ChangeState(Walk);
+    }
+
+    // ------------------------------------------------------------------ Hareket
+    private void ReadInput()
+    {
+        var input = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
+        input = Vector3.ClampMagnitude(input, 1f);
+
+        // WASD kameranin baktigi yone gore: W ekranda yukari.
+        Camera cam = Camera.main;
+        if (cam != null)
+            input = Quaternion.Euler(0f, cam.transform.eulerAngles.y, 0f) * input;
+        MoveInput = input;
+
+        SprintHeld = Input.GetKey(sprintKey);
+        SprintPressed = Input.GetKeyDown(sprintKey);
+        SlowWalkHeld = Input.GetKey(slowWalkKey);
+        CrouchPressed = Input.GetKeyDown(crouchKey);
+        PronePressed = Input.GetKeyDown(proneKey);
+    }
+
+    // Durumlar FixedUpdate'te cagirir: yatay hizi ayarlar ve gidilen yone doner.
+    public void Move(Vector3 velocity, float degreesPerSecond)
+    {
+        rb.linearVelocity = new Vector3(velocity.x, rb.linearVelocity.y, velocity.z);
+        if (aiming || velocity.sqrMagnitude < 0.0001f)
+            return;
+
+        Quaternion target = Quaternion.LookRotation(new Vector3(velocity.x, 0f, velocity.z));
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, target, degreesPerSecond * Time.fixedDeltaTime);
+    }
+
+    // ------------------------------------------------------------------ Collider
+    // Ayaklar ayni yukseklikte kalacak sekilde capsule'u durusa gore degistirir.
+    public void SetBodyShape(PlayerStance stance)
+    {
+        GetShape(stance, out int direction, out float height, out Vector3 center);
+        capsule.direction = direction;
+        capsule.height = height;
+        capsule.center = center;
+    }
+
+    // Bu durusa gececek yer var mi (ornegin comelmisken ustte tavan).
+    public bool CanFit(PlayerStance stance)
+    {
+        GetShape(stance, out int direction, out float height, out Vector3 center);
+        float radius = capsule.radius * 0.95f;
+        Vector3 axis = direction == 2 ? transform.forward : transform.up;
+        Vector3 middle = transform.TransformPoint(center);
+        float half = Mathf.Max(0f, height / 2f - radius);
+        // Ayaklarin altindaki zemine degmemek icin biraz yukaridan bak.
+        Vector3 lift = Vector3.up * 0.05f;
+        foreach (var hit in Physics.OverlapCapsule(middle - axis * half + lift, middle + axis * half + lift, radius, ~0, QueryTriggerInteraction.Ignore))
         {
-            anim.SetBool("Running", false);
-            anim.SetBool("Walking", false);
-            OnAimAnimations();
+            if (!hit.transform.IsChildOf(transform))
+                return false;
         }
-        else
+        return true;
+    }
+
+    private void GetShape(PlayerStance stance, out int direction, out float height, out Vector3 center)
+    {
+        switch (stance)
         {
-            if (rb.linearVelocity.magnitude > 3)
-            {
-                anim.SetBool("Walking", false);
-                anim.SetBool("Running", true);
-            }
-            else if (rb.linearVelocity.magnitude <= 3.02 && rb.linearVelocity.magnitude >= .02f)
-            {
-                anim.SetBool("Running", false);
-                anim.SetBool("Walking", true);
-            }
-            else
-            {
-                anim.SetBool("Running", false);
-                anim.SetBool("Walking", false);
-            }
+            case PlayerStance.Crouching:
+                direction = 1;
+                height = crouchHeight;
+                center = new Vector3(standCenter.x, feetY + crouchHeight / 2f, standCenter.z);
+                break;
+            case PlayerStance.Prone:
+                direction = 2;
+                height = proneLength;
+                center = new Vector3(standCenter.x, feetY + capsule.radius, standCenter.z);
+                break;
+            default:
+                direction = 1;
+                height = standHeight;
+                center = standCenter;
+                break;
         }
     }
+
+    // ------------------------------------------------------------------ Nisan
+    public bool aiming = false;
 
     private void OnAimAnimations()
     {
         var (success, position) = GetMousePosition();
+        if (!success)
+            return;
 
-        if (success)
-        {
-            float MouseDirecX = Mathf.Clamp(position.x - transform.position.x, -1f, 1f);
-
-            float MouseDirecZ = Mathf.Clamp(position.z - transform.position.z, -1f, 1f);
-
-            anim.SetFloat("MouseDirecx", MouseDirecX);
-            anim.SetFloat("MouseDirecz", MouseDirecZ);
-
-            anim.SetFloat("Velocityx", rb.linearVelocity.x);
-            anim.SetFloat("Velocityz", rb.linearVelocity.z);
-        }
+        float MouseDirecX = Mathf.Clamp(position.x - transform.position.x, -1f, 1f);
+        float MouseDirecZ = Mathf.Clamp(position.z - transform.position.z, -1f, 1f);
+        Animation.Animator.SetFloat("MouseDirecx", MouseDirecX);
+        Animation.Animator.SetFloat("MouseDirecz", MouseDirecZ);
+        Animation.Animator.SetFloat("Velocityx", rb.linearVelocity.x);
+        Animation.Animator.SetFloat("Velocityz", rb.linearVelocity.z);
     }
-
-    private void Walk()
-    {
-        TotalSpeed = BaseSpeed * SprintValue;
-        Direc.x = Input.GetAxisRaw("Horizontal");
-        Direc.z = Input.GetAxisRaw("Vertical");
-        Direc.Normalize();
-        rb.linearVelocity = new Vector3(Direc.x * TotalSpeed, rb.linearVelocity.y, Direc.z * TotalSpeed);
-        if (!aiming)
-            Rotation();
-
-    }
-
-    private void Rotation()
-    {
-        if (Direc.x == 0 && Direc.z > 0) { transform.rotation = Quaternion.Euler(0, 0, 0); }
-        if (Direc.x > 0 && Direc.z > 0) { transform.rotation = Quaternion.Euler(0, 45, 0); }
-        if (Direc.x > 0 && Direc.z == 0) { transform.rotation = Quaternion.Euler(0, 90, 0); }
-        if (Direc.x > 0 && Direc.z < 0) { transform.rotation = Quaternion.Euler(0, 135, 0); }
-        if (Direc.x == 0 && Direc.z < 0) { transform.rotation = Quaternion.Euler(0, 180, 0); }
-        if (Direc.x < 0 && Direc.z < 0) { transform.rotation = Quaternion.Euler(0, -135, 0); }
-        if (Direc.x < 0 && Direc.z == 0) { transform.rotation = Quaternion.Euler(0, -90, 0); }
-        if (Direc.x < 0 && Direc.z > 0) { transform.rotation = Quaternion.Euler(0, -45, 0); }
-    }
-
-    private void Sprint()
-    {
-        if (Input.GetKey(KeyCode.LeftShift))
-            SprintValue = SprintCarpani;
-        else
-            SprintValue = 1;
-    }
-
-    //------------------------------------- Look At Mouse Start -------------------------------------
-    public bool aiming = false;
 
     private (bool success, Vector3 position) GetMousePosition()
     {
@@ -133,14 +251,10 @@ public class PlayerMovement : MonoBehaviour
         int layerMask = ~(1 << playerLayer);
 
         if (Physics.Raycast(mousepos, out var hitInfo, Mathf.Infinity, layerMask))
-        {
             return (success: true, position: hitInfo.point);
-        }
-        else
-        {
-            return (success: false, position: Vector3.zero);
-        }
+        return (success: false, position: Vector3.zero);
     }
+
     private void AimOn()
     {
         aiming = true;
@@ -153,12 +267,9 @@ public class PlayerMovement : MonoBehaviour
             transform.forward = Direction;
             transform.Rotate(new Vector3(0, 31.2f, 0));
         }
-
     }
-    //----------------------------------------------------------------------------------------------
 
-    //------------------------------------- Layer Weights ------------------------------------------
-    // Rig'ler ve animator katmanı tek bir blend değerinden beslenir; nişan yarıda bırakılırsa blend kaldığı yerden geri döner.
+    // Rig'ler ve animator katmani tek bir blend degerinden beslenir; nisan yarida birakilirsa blend kaldigi yerden geri doner.
     private float aimBlend;
     private void UpdateAimWeights()
     {
@@ -166,9 +277,10 @@ public class PlayerMovement : MonoBehaviour
         aimBlend = ADSSpeed > 0f ? Mathf.MoveTowards(aimBlend, target, Time.deltaTime / ADSSpeed) : target;
 
         float weight = Mathf.SmoothStep(0f, 1f, aimBlend);
-        WeaponAimRig.weight = weight;
-        BodyAimRig.weight = weight;
-        anim.SetLayerWeight(1, weight);
+        if (WeaponAimRig != null)
+            WeaponAimRig.weight = weight;
+        if (BodyAimRig != null)
+            BodyAimRig.weight = weight;
+        Animation.SetAimWeight(weight, CurrentState != null ? CurrentState.Stance : PlayerStance.Standing, weapons != null && weapons.hasWeapon);
     }
-    //----------------------------------------------------------------------------------------------
 }
