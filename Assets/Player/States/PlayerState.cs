@@ -33,5 +33,4 @@ public enum PlayerStance
 {
     Standing = 0,
     Crouching = 1,
-    Prone = 2,
 }

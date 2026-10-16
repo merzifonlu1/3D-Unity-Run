@@ -1,8 +1,8 @@
 using UnityEngine;
 
 // Oyuncunun Animator parametrelerini tek yerden yazar.
-// Speed: 0 durma, 0.5 yavas yuruyus, 1 yuruyus, 2 kosu (comelme/yuzustu icinde 0..1).
-// Stance: 0 ayakta, 1 comelme, 2 yuzustu. Seated: koltukta.
+// Speed: 0 durma, 0.5 yavas yuruyus, 1 yuruyus, 2 kosu (comelme icinde 0..1).
+// Stance: 0 ayakta, 1 comelme. Seated: koltukta.
 [RequireComponent(typeof(Animator))]
 public class AnimationHandler : MonoBehaviour
 {

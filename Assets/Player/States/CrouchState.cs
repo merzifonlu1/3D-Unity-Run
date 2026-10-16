@@ -1,4 +1,4 @@
-// Comelme: yavas hareket, collider alcalir. C ya da Shift ile kalkar, Z ile yuzustu yatar.
+// Comelme: yavas hareket, collider alcalir. C ya da Shift ile kalkar.
 // Ust tarafta yer yoksa ayaga kalkilmaz.
 public class CrouchState : LocomotionState
 {
@@ -9,8 +9,6 @@ public class CrouchState : LocomotionState
 
     protected override PlayerState NextState()
     {
-        if (player.PronePressed && player.CanFit(PlayerStance.Prone))
-            return player.Prone;
         if ((player.CrouchPressed || player.SprintPressed) && player.CanFit(PlayerStance.Standing))
             return StandingGait();
         return this;

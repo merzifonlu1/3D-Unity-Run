@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-// Banana Man icin eksik durus animasyonlarini (comelme, yuzustu, oturma) uretir.
+// Banana Man icin eksik durus animasyonlarini (comelme, oturma) uretir.
 // Pozlar kemik yonleri olarak tanimlanir (karakter +Z'ye bakar, +X sagdir),
 // HumanPoseHandler ile kas degerlerine cevrilir ve humanoid .anim olarak kaydedilir.
 // Bunlar gecici kliplerdir; Mixamo'dan gercek klipler indirilince Animator'de
@@ -39,7 +39,7 @@ public static class StanceClipBaker
 
     private class Pose
     {
-        public float bodyPitch;           // tum vucudu one yatirma (yuzustu icin 90)
+        public float bodyPitch;           // tum vucudu one yatirma (one yatirma)
         public readonly List<Segment> segments = new List<Segment>();
         public Vector3? hipsTarget;       // kalcanin koke gore hedef konumu (oturma)
         public float groundClearance = 0f; // en alttaki kemigin yerden yuksekligi
@@ -69,8 +69,6 @@ public static class StanceClipBaker
 
             Save("CrouchIdle", Bake(animator, handler, basePose, 2f, 5, CrouchIdle));
             Save("CrouchWalk", Bake(animator, handler, basePose, 1.1f, 12, CrouchWalk));
-            Save("ProneIdle", Bake(animator, handler, basePose, 3f, 5, ProneIdle));
-            Save("ProneCrawl", Bake(animator, handler, basePose, 1.6f, 12, ProneCrawl));
             Save("SitIdle", Bake(animator, handler, basePose, 3f, 5, SitIdle));
             handler.Dispose();
         }
@@ -111,29 +109,6 @@ public static class StanceClipBaker
         p.Seg(HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, 55f - 10f * s);
         p.Seg(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, 15f + 18f * s, side: 8f);
         p.Seg(HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, 55f + 10f * s);
-        return p;
-    }
-
-    private static Pose ProneIdle(float t)
-    {
-        float breath = Mathf.Sin(t * Mathf.PI * 2f);
-        var p = ProneBase();
-        ProneLeg(p, true, -90f, -88f, side: 8f);
-        ProneLeg(p, false, -90f, -88f, side: 8f);
-        ProneArms(p, 0f, breath);
-        return p;
-    }
-
-    private static Pose ProneCrawl(float t)
-    {
-        float s = Mathf.Sin(t * Mathf.PI * 2f);
-        var p = ProneBase();
-        // Asker surunmesi: bir diz yana ve ileri cekilirken karsi kol one uzanir.
-        float l = Mathf.Max(0f, s);
-        float r = Mathf.Max(0f, -s);
-        ProneLeg(p, true, -90f + 55f * l, -88f - 20f * l, side: 10f + 35f * l);
-        ProneLeg(p, false, -90f + 55f * r, -88f - 20f * r, side: 10f + 35f * r);
-        ProneArms(p, s, 0f);
         return p;
     }
 
@@ -184,39 +159,6 @@ public static class StanceClipBaker
         p.Seg(HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, fore);
         p.Seg(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, upper, side: 10f);
         p.Seg(HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, fore);
-    }
-
-    private static Pose ProneBase()
-    {
-        var p = new Pose { bodyPitch = 90f, keepFeetOnGround = false, groundClearance = 0.05f };
-        p.Seg(HumanBodyBones.Spine, HumanBodyBones.Chest, 85f, up: true);
-        p.Seg(HumanBodyBones.Chest, HumanBodyBones.UpperChest, 80f, up: true);
-        p.Seg(HumanBodyBones.UpperChest, HumanBodyBones.Neck, 70f, up: true);
-        p.Seg(HumanBodyBones.Neck, HumanBodyBones.Head, 45f, up: true);
-        return p;
-    }
-
-    private static void ProneLeg(Pose p, bool left, float thigh, float shin, float side)
-    {
-        var upper = left ? HumanBodyBones.LeftUpperLeg : HumanBodyBones.RightUpperLeg;
-        var lower = left ? HumanBodyBones.LeftLowerLeg : HumanBodyBones.RightLowerLeg;
-        var foot = left ? HumanBodyBones.LeftFoot : HumanBodyBones.RightFoot;
-        var toes = left ? HumanBodyBones.LeftToes : HumanBodyBones.RightToes;
-        p.Seg(upper, lower, thigh, side: side);
-        p.Seg(lower, foot, shin, side: side * 0.3f);
-        p.Seg(foot, toes, 0f);
-    }
-
-    // reach: -1..1, sol kol (+) / sag kol (-) one uzanir.
-    private static void ProneArms(Pose p, float reach, float breath)
-    {
-        float l = Mathf.Max(0f, reach);
-        float r = Mathf.Max(0f, -reach);
-        // Dirsekler yerde, on kollar ileri: ust kol hafif ileri-asagi, on kol ileri yatay.
-        p.Seg(HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, 45f + 35f * l + breath, side: 30f - 10f * l);
-        p.Seg(HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, 92f, side: -30f + 20f * l);
-        p.Seg(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, 45f + 35f * r + breath, side: 30f - 10f * r);
-        p.Seg(HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, 92f, side: -30f + 20f * r);
     }
 
     // ---------------------------------------------------------------- Pisirme

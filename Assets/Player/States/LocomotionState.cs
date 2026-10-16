@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // Yerde hareket eden butun durumlarin ortak davranisi: WASD ile kameraya gore hareket,
-// gidilen yone donme ve durus tuslari (C comel, Z yuzustu) ile gecis.
+// gidilen yone donme ve durus tuslari (C comel) ile gecis.
 public abstract class LocomotionState : PlayerState
 {
     protected LocomotionState(PlayerMovement player) : base(player) { }
@@ -30,11 +30,9 @@ public abstract class LocomotionState : PlayerState
         player.Move(player.MoveInput * (player.WalkSpeed * SpeedMultiplier), TurnSpeed);
     }
 
-    // Ayaktaki durumlar icin varsayilan gecisler; comelme ve yuzustu bunu ezer.
+    // Ayaktaki durumlar icin varsayilan gecisler; comelme bunu ezer.
     protected virtual PlayerState NextState()
     {
-        if (player.PronePressed && player.CanFit(PlayerStance.Prone))
-            return player.Prone;
         if (player.CrouchPressed)
             return player.Crouch;
         return StandingGait();
