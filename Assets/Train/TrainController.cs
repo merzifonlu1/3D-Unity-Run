@@ -3,6 +3,8 @@ using UnityEngine;
 // Treni rota uzerinde sadece ileri ve geri hareket ettirir.
 // Vitesler: -1 (geri), 0 (dur), 1, 2, 3 (ileri). W vites yukseltir, S dusurur.
 // Hiz, yeni vitesin hizina aniden degil yavasca ulasir.
+// Tren sadece kondukter koltugunda biri varken (HasDriver) vites alir; surucu
+// yoksa vites 0'a alinir ve tren fren yaparak durur.
 [RequireComponent(typeof(Rigidbody))]
 public class TrainController : MonoBehaviour
 {
@@ -17,12 +19,16 @@ public class TrainController : MonoBehaviour
     [Tooltip("Yavaslama (m/s^2)")]
     [SerializeField] private float braking = 3f;
     [SerializeField] private float startDistance;
-    [SerializeField] private bool acceptInput = true;
-    [SerializeField] private bool showDebugHud = true;
+    [SerializeField] private bool showControlPanel = true;
 
     public int Gear { get; private set; }
     public float Speed { get; private set; }
     public float Distance { get; private set; }
+    public bool HasDriver { get; private set; }
+
+    // Her fizik adiminda cagrilir: (eski konum, eski donus, yeni konum, yeni donus).
+    // Trenin icinde yuruyen yolcular bununla trenle birlikte tasinir.
+    public event System.Action<Vector3, Quaternion, Vector3, Quaternion> Moved;
 
     private Rigidbody rb;
 
@@ -49,7 +55,7 @@ public class TrainController : MonoBehaviour
 
     private void Update()
     {
-        if (!acceptInput)
+        if (!HasDriver)
             return;
 
         if (Input.GetKeyDown(KeyCode.W))
@@ -58,13 +64,24 @@ public class TrainController : MonoBehaviour
             ShiftDown();
     }
 
+    public void SetDriver(bool hasDriver)
+    {
+        HasDriver = hasDriver;
+        if (!hasDriver)
+            Gear = 0;
+    }
+
     public void ShiftUp()
     {
+        if (!HasDriver)
+            return;
         Gear = Mathf.Min(Gear + 1, MaxGear);
     }
 
     public void ShiftDown()
     {
+        if (!HasDriver)
+            return;
         Gear = Mathf.Max(Gear - 1, MinGear);
     }
 
@@ -85,16 +102,38 @@ public class TrainController : MonoBehaviour
             Gear = 0;
         }
 
+        Vector3 oldPosition = rb.position;
+        Quaternion oldRotation = rb.rotation;
         route.Evaluate(Distance, out Vector3 position, out Vector3 forward);
+        Quaternion rotation = Quaternion.LookRotation(forward, Vector3.up);
         rb.MovePosition(position);
-        rb.MoveRotation(Quaternion.LookRotation(forward, Vector3.up));
+        rb.MoveRotation(rotation);
+        Moved?.Invoke(oldPosition, oldRotation, position, rotation);
     }
 
     private void OnGUI()
     {
-        if (!showDebugHud)
+        if (!showControlPanel || !HasDriver)
             return;
 
-        GUI.Label(new Rect(10, 10, 300, 22), $"Vites: {Gear}   Hiz: {Speed:0.0} m/s");
+        // Kontrol ekrani: sadece kondukter koltugunda oturulurken gorunur.
+        var area = new Rect(Screen.width / 2f - 160f, Screen.height - 130f, 320f, 110f);
+        GUI.Box(area, "Tren Kontrol");
+        GUILayout.BeginArea(new Rect(area.x + 12f, area.y + 24f, area.width - 24f, area.height - 30f));
+        GUILayout.BeginHorizontal();
+        for (int g = MinGear; g <= MaxGear; g++)
+        {
+            string label = g == Gear ? $"[{GearName(g)}]" : GearName(g);
+            GUILayout.Label(label, GUILayout.Width(52f));
+        }
+        GUILayout.EndHorizontal();
+        GUILayout.Label($"Hiz: {Speed * 3.6f:0} km/sa");
+        GUILayout.Label("W: vites yukselt   S: vites dusur   E: kalk");
+        GUILayout.EndArea();
+    }
+
+    private static string GearName(int gear)
+    {
+        return gear < 0 ? "G" : gear == 0 ? "N" : gear.ToString();
     }
 }
