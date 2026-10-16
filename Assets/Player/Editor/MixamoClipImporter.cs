@@ -40,8 +40,12 @@ public class MixamoClipImporter : AssetPostprocessor
             clips[i].keepOriginalOrientation = true;
             clips[i].lockRootHeightY = true;
             clips[i].keepOriginalPositionY = true;
-            clips[i].lockRootPositionXZ = true;
+            // XZ poza gomulmez: ileri hareket kok hareketi olarak ayrilir ve
+            // (applyRootMotion kapali oldugu icin) atilir, govde collider'in ustunde kalir.
+            // Gomulseydi govde dongu boyunca one kayip basa sicrardi.
+            clips[i].lockRootPositionXZ = false;
             clips[i].keepOriginalPositionXZ = false;
+            clips[i].loopPose = true;
         }
         importer.clipAnimations = clips;
     }

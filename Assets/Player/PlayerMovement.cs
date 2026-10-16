@@ -71,6 +71,27 @@ public class PlayerMovement : MonoBehaviour
 
     private void Awake()
     {
+        FindComponents();
+        standHeight = capsule.height;
+        standCenter = capsule.center;
+        feetY = standCenter.y - standHeight / 2f;
+        CreateStates();
+    }
+
+    // Play modunda script yeniden derlenince durum nesneleri kaybolur; OnEnable onlari geri kurar.
+    private void OnEnable()
+    {
+        if (Walk == null)
+        {
+            FindComponents();
+            CreateStates();
+        }
+        if (CurrentState == null)
+            ChangeState(Walk);
+    }
+
+    private void FindComponents()
+    {
         rb = GetComponent<Rigidbody>();
         capsule = GetComponent<CapsuleCollider>();
         weapons = GetComponent<WeaponEquip>();
@@ -79,11 +100,10 @@ public class PlayerMovement : MonoBehaviour
         Animation = animator.GetComponent<AnimationHandler>();
         if (Animation == null)
             Animation = animator.gameObject.AddComponent<AnimationHandler>();
+    }
 
-        standHeight = capsule.height;
-        standCenter = capsule.center;
-        feetY = standCenter.y - standHeight / 2f;
-
+    private void CreateStates()
+    {
         Walk = new WalkState(this);
         Sprint = new SprintState(this);
         SlowWalk = new SlowWalkState(this);
@@ -96,7 +116,6 @@ public class PlayerMovement : MonoBehaviour
     {
         WeaponAimRig = RigLayerWeaponAim.GetComponent<Rig>();
         BodyAimRig = RigLayerBodyAim.GetComponent<Rig>();
-        ChangeState(Walk);
     }
 
     private void Update()
