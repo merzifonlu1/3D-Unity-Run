@@ -189,7 +189,7 @@ BlendTree:
   m_Name: Unarmed Prone
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: 4ffd28f5af79a294687ed670c0343a61, type: 2}
+    m_Motion: {fileID: 7400000, guid: 6a8b07aaa25687741931530ab74ce436, type: 2}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -197,10 +197,10 @@ BlendTree:
     m_DirectBlendParameter: Speed
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: 2c29e57a50ba3b1449db8cf4e189094c, type: 2}
+    m_Motion: {fileID: -203655887218126122, guid: 8973062dd7c31b640b8be4245958cd86, type: 3}
     m_Threshold: 1
     m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
+    m_TimeScale: 1.4969629
     m_CycleOffset: 0
     m_DirectBlendParameter: Speed
     m_Mirror: 0
@@ -283,7 +283,7 @@ BlendTree:
   m_Name: Rifle Prone
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: 4ffd28f5af79a294687ed670c0343a61, type: 2}
+    m_Motion: {fileID: -203655887218126122, guid: 60dff51377576e344b51c7c6da22cc1f, type: 3}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -291,10 +291,10 @@ BlendTree:
     m_DirectBlendParameter: Speed
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: 2c29e57a50ba3b1449db8cf4e189094c, type: 2}
+    m_Motion: {fileID: -203655887218126122, guid: 27f976672a76e1645bdee405f8a58267, type: 3}
     m_Threshold: 1
     m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
+    m_TimeScale: 1.9337509
     m_CycleOffset: 0
     m_DirectBlendParameter: Speed
     m_Mirror: 0
@@ -445,7 +445,7 @@ BlendTree:
   m_Name: Rifle Crouch
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: 24acc541cf63f7d40a6956169e1fdb8b, type: 2}
+    m_Motion: {fileID: -203655887218126122, guid: 8a479fc2b12f3b34ca67f1f9a6f31c77, type: 3}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -453,10 +453,10 @@ BlendTree:
     m_DirectBlendParameter: Speed
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: b0cb42c38c3d3ef45a9f63ea64d20223, type: 2}
+    m_Motion: {fileID: -203655887218126122, guid: 9a3e5ed41609f9e428b1892f0b8eecdf, type: 3}
     m_Threshold: 1
     m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
+    m_TimeScale: 1.2204431
     m_CycleOffset: 0
     m_DirectBlendParameter: Speed
     m_Mirror: 0
@@ -839,10 +839,10 @@ BlendTree:
     m_DirectBlendParameter: Speed
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: 90e0bddf4c1602741b6d443bb81062c2, type: 2}
+    m_Motion: {fileID: -203655887218126122, guid: f7047c2847812d1429f85dfb11a10e17, type: 3}
     m_Threshold: 0.5
     m_Position: {x: 0, y: 0}
-    m_TimeScale: 0.7
+    m_TimeScale: 1.43037
     m_CycleOffset: 0
     m_DirectBlendParameter: Speed
     m_Mirror: 0
@@ -1692,7 +1692,7 @@ BlendTree:
   m_Name: Unarmed Crouch
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: 24acc541cf63f7d40a6956169e1fdb8b, type: 2}
+    m_Motion: {fileID: -203655887218126122, guid: e9cb7b2277c53524ea79bb6a857f3ff1, type: 3}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -1700,10 +1700,10 @@ BlendTree:
     m_DirectBlendParameter: Speed
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: b0cb42c38c3d3ef45a9f63ea64d20223, type: 2}
+    m_Motion: {fileID: -203655887218126122, guid: 905b12fb1b4fc37438c3281f9205d584, type: 3}
     m_Threshold: 1
     m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
+    m_TimeScale: 0.7981078
     m_CycleOffset: 0
     m_DirectBlendParameter: Speed
     m_Mirror: 0

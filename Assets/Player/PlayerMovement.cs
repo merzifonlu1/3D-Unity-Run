@@ -12,8 +12,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float BaseSpeed;
     [SerializeField, FormerlySerializedAs("SprintCarpanı")] private float SprintCarpani;
     [SerializeField] private float slowWalkMultiplier = 0.5f;
-    [SerializeField] private float crouchMultiplier = 0.5f;
-    [SerializeField] private float proneMultiplier = 0.25f;
+    [SerializeField] private float crouchMultiplier = 0.4f;
+    [SerializeField] private float proneMultiplier = 0.15f;
     [Tooltip("Donus hizi (derece/saniye)")]
     [SerializeField] private float turnSpeed = 900f;
     [SerializeField] private float proneTurnSpeed = 200f;
