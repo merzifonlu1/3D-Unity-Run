@@ -38,14 +38,12 @@ public abstract class LocomotionState : PlayerState
         return StandingGait();
     }
 
-    // Ayakta hangi yuruyus: Shift kosu, X yavas yuruyus, yoksa normal yuruyus.
+    // Ayakta hangi yuruyus: Shift kosu, yoksa normal yuruyus.
     protected PlayerState StandingGait()
     {
         bool moving = player.MoveInput.sqrMagnitude > 0.01f;
         if (player.SprintHeld && moving && !player.aiming)
             return player.Sprint;
-        if (player.SlowWalkHeld)
-            return player.SlowWalk;
         return player.Walk;
     }
 }

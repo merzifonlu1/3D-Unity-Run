@@ -15,11 +15,3 @@ public class SprintState : LocomotionState
     protected override float SpeedMultiplier => player.SprintMultiplier;
     public override float Gait => 2f;
 }
-
-public class SlowWalkState : LocomotionState
-{
-    public SlowWalkState(PlayerMovement player) : base(player) { }
-
-    protected override float SpeedMultiplier => player.SlowWalkMultiplier;
-    public override float Gait => 0.5f;
-}

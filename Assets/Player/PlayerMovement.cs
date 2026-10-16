@@ -4,21 +4,19 @@ using UnityEngine.Serialization;
 
 // Oyuncu hareketinin baglami: girdi, Rigidbody, collider ve nisan burada.
 // Hareket kurallari PlayerState'ten tureyen durumlarda (Assets/Player/States):
-// WalkState, SprintState, SlowWalkState, CrouchState, SeatedState.
+// WalkState, SprintState, CrouchState, SeatedState.
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Hizlar")]
     [Tooltip("Normal yuruyus hizi (m/s)")]
     [SerializeField] private float BaseSpeed;
     [SerializeField, FormerlySerializedAs("SprintCarpanı")] private float SprintCarpani;
-    [SerializeField] private float slowWalkMultiplier = 0.5f;
     [SerializeField] private float crouchMultiplier = 0.4f;
     [Tooltip("Donus hizi (derece/saniye)")]
     [SerializeField] private float turnSpeed = 900f;
 
     [Header("Tuslar")]
     [SerializeField] private KeyCode sprintKey = KeyCode.LeftShift;
-    [SerializeField] private KeyCode slowWalkKey = KeyCode.X;
     [SerializeField] private KeyCode crouchKey = KeyCode.C;
 
     [Header("Collider (comelme)")]
@@ -42,7 +40,6 @@ public class PlayerMovement : MonoBehaviour
 
     public float WalkSpeed => BaseSpeed;
     public float SprintMultiplier => SprintCarpani;
-    public float SlowWalkMultiplier => slowWalkMultiplier;
     public float CrouchMultiplier => crouchMultiplier;
     public float TurnSpeed => turnSpeed;
 
@@ -50,14 +47,12 @@ public class PlayerMovement : MonoBehaviour
     public Vector3 MoveInput { get; private set; }
     public bool SprintHeld { get; private set; }
     public bool SprintPressed { get; private set; }
-    public bool SlowWalkHeld { get; private set; }
     public bool CrouchPressed { get; private set; }
 
     public AnimationHandler Animation { get; private set; }
     public PlayerState CurrentState { get; private set; }
     public WalkState Walk { get; private set; }
     public SprintState Sprint { get; private set; }
-    public SlowWalkState SlowWalk { get; private set; }
     public CrouchState Crouch { get; private set; }
     public SeatedState Seated { get; private set; }
 
@@ -98,7 +93,6 @@ public class PlayerMovement : MonoBehaviour
     {
         Walk = new WalkState(this);
         Sprint = new SprintState(this);
-        SlowWalk = new SlowWalkState(this);
         Crouch = new CrouchState(this);
         Seated = new SeatedState(this);
     }
@@ -170,7 +164,6 @@ public class PlayerMovement : MonoBehaviour
 
         SprintHeld = Input.GetKey(sprintKey);
         SprintPressed = Input.GetKeyDown(sprintKey);
-        SlowWalkHeld = Input.GetKey(slowWalkKey);
         CrouchPressed = Input.GetKeyDown(crouchKey);
     }
 

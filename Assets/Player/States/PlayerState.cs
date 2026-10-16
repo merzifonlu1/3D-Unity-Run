@@ -16,7 +16,7 @@ public abstract class PlayerState
     // Bu durumdayken sag tik ile nisan alinabilir mi.
     public virtual bool CanAim => true;
 
-    // Animator'e giden yuruyus degeri: 0 durma, 0.5 yavas, 1 yuruyus, 2 kosu.
+    // Animator'e giden yuruyus degeri: 0 durma, 1 yuruyus, 2 kosu.
     public virtual float Gait => 0f;
 
     public virtual void Enter() { }
