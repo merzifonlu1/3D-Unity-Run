@@ -1,51 +1,45 @@
 using UnityEngine;
 
-// Oyuncunun trene binmesi, icinde gezmesi, koltuklara oturmasi ve inmesi.
-// Disaridayken kapinin yaninda E: trene biner.
-// Icerideyken koltugun yaninda E: oturur, kapinin yaninda E: iner.
-// Otururken E: kalkar. Kondukter koltugunda oturulurken tren surulebilir;
-// kondukter kalkinca tren fren yapip durur.
+// Oyuncunun trene binip surmesi ve inmesi.
+// Trenin yaninda E: kabine biner ve hemen surmeye baslar (kontrol paneli acilir).
+// Tren dururken E: indigi taraftan trenden iner.
+// Surucu yokken tren vites alamaz; bu yuzden oyuncu inince tren hareket etmez.
 [RequireComponent(typeof(TrainController))]
 public class TrainBoarding : MonoBehaviour
 {
-    private enum State { Outside, Inside, Seated }
-
     [SerializeField] private PlayerMovement player;
-    [Tooltip("Kapilar. Her kapinin ileri yonu (mavi ok) trenin disina bakmali.")]
-    [SerializeField] private Transform[] doors = new Transform[0];
-    [Tooltip("Oyuncu icerideyken gizlenen parcalar (tavan, ust duvarlar, camlar) ki ic mekan yukaridan gorunsun")]
-    [SerializeField] private Renderer[] hideWhenInside = new Renderer[0];
-    [Tooltip("Zeminin ust yuzeyinin trenin tabanina gore yuksekligi")]
-    [SerializeField] private float floorHeight = 0.2f;
-    [SerializeField] private float doorRange = 2.2f;
-    [SerializeField] private float seatRange = 1.2f;
+    [Tooltip("Surucunun oturdugu nokta (kabin). Ileri yonu trenin onune bakmali.")]
+    [SerializeField] private Transform driverPoint;
+    [Tooltip("Trenin yari genisligi (x) ve yari uzunlugu (z), metre")]
+    [SerializeField] private Vector2 bodyHalfSize = new Vector2(1.1f, 5.2f);
+    [Tooltip("Trene binmek icin trenin kenarina ne kadar yakin olmak gerekir (metre)")]
+    [SerializeField] private float boardRange = 1.5f;
 
     private TrainController controller;
     private TrainVision vision;
-    private TrainSeat[] seats;
     private Rigidbody playerBody;
     private Collider playerCollider;
     private WeaponEquip playerWeapons;
+    private Renderer[] playerRenderers;
     private Transform playerParent;
 
-    private State state = State.Outside;
-    private TrainSeat currentSeat;
+    private bool driving;
+    private float exitSide = -1f; // -1 sol, 1 sag: oyuncu bindigi taraftan iner
+    private float feetOffset;
     private string prompt;
 
-    public bool PlayerInside => state != State.Outside;
+    public Transform DriverPoint => driverPoint;
 
-    public void Configure(Transform[] doorPoints, Renderer[] cutaway, float floor)
+    public void Configure(Transform driver, Vector2 halfSize)
     {
-        doors = doorPoints;
-        hideWhenInside = cutaway;
-        floorHeight = floor;
+        driverPoint = driver;
+        bodyHalfSize = halfSize;
     }
 
     private void Awake()
     {
         controller = GetComponent<TrainController>();
         vision = GetComponent<TrainVision>();
-        seats = GetComponentsInChildren<TrainSeat>();
         if (player == null)
             player = FindFirstObjectByType<PlayerMovement>();
         if (player != null)
@@ -56,157 +50,106 @@ public class TrainBoarding : MonoBehaviour
         }
     }
 
-    private void OnEnable()
-    {
-        controller.Moved += CarryPassenger;
-    }
-
-    private void OnDisable()
-    {
-        controller.Moved -= CarryPassenger;
-    }
-
     private void Update()
     {
         prompt = null;
-        if (player == null)
+        if (player == null || driverPoint == null)
             return;
 
-        switch (state)
-        {
-            case State.Outside:
-                if (NearestDoor(outside: true) != null)
-                    prompt = "E: Trene bin";
-                break;
-            case State.Inside:
-                TrainSeat seat = NearestFreeSeat();
-                if (seat != null)
-                    prompt = $"E: Otur ({seat.DisplayName})";
-                else if (NearestDoor(outside: false) != null)
-                    prompt = controller.Speed != 0f ? "Tren durmadan inilemez" : "E: Trenden in";
-                break;
-            case State.Seated:
-                if (!currentSeat.IsDriver)
-                    prompt = $"{currentSeat.DisplayName}   E: Kalk";
-                break;
-        }
+        // Surerken ipuclarini kontrol paneli gosterir.
+        if (!driving && PlayerNearby())
+            prompt = "E: Trene bin ve sur";
 
         if (Input.GetButtonDown("Interact"))
             Interact();
     }
 
-    // E tusunun yaptigi is: duruma gore bin / otur / kalk / in.
+    // E tusunun yaptigi is: duruma gore bin ya da in.
     public void Interact()
     {
-        if (player == null)
+        if (player == null || driverPoint == null)
             return;
 
-        switch (state)
+        if (!driving)
         {
-            case State.Outside:
-            {
-                Transform door = NearestDoor(outside: true);
-                if (door != null)
-                    Board(door);
-                break;
-            }
-            case State.Inside:
-            {
-                TrainSeat seat = NearestFreeSeat();
-                Transform door = NearestDoor(outside: false);
-                if (seat != null)
-                    Sit(seat);
-                else if (door != null && controller.Speed == 0f)
-                    Leave(door);
-                break;
-            }
-            case State.Seated:
-                StandUp();
-                break;
+            if (PlayerNearby())
+                Board();
+        }
+        else if (controller.Speed == 0f)
+        {
+            Leave();
         }
     }
 
-    private void Board(Transform door)
+    private void Board()
     {
-        Vector3 inside = door.position - door.forward * 0.9f;
-        inside.y = transform.TransformPoint(0f, floorHeight, 0f).y;
-        TeleportPlayer(inside);
-        SetCutaway(true);
-        if (vision != null)
-            vision.Show(null);
-        state = State.Inside;
-    }
+        exitSide = transform.InverseTransformPoint(player.transform.position).x < 0f ? -1f : 1f;
 
-    private void Leave(Transform door)
-    {
-        Vector3 outside = door.position + door.forward * 1.0f;
-        outside.y = GroundHeight(outside);
-        TeleportPlayer(outside);
-        SetCutaway(false);
-        if (vision != null)
-            vision.Hide();
-        state = State.Outside;
-    }
-
-    private void Sit(TrainSeat seat)
-    {
+        feetOffset = FeetOffset();
         player.EnterSeat();
         if (playerWeapons != null)
             playerWeapons.enabled = false;
 
         playerBody.linearVelocity = Vector3.zero;
         playerBody.isKinematic = true;
+        if (playerCollider != null)
+            playerCollider.enabled = false;
         playerParent = player.transform.parent;
-        player.transform.SetParent(seat.SitPoint, true);
-        player.transform.localPosition = new Vector3(0f, FeetOffset(), 0f);
+        player.transform.SetParent(driverPoint, true);
+        player.transform.localPosition = Vector3.zero;
         player.transform.localRotation = Quaternion.identity;
 
-        seat.Occupied = true;
-        currentSeat = seat;
-        if (seat.IsDriver)
-            controller.SetDriver(true);
+        // Oyuncu kabinin icinde; modelin icinden gorunmesin.
+        playerRenderers = player.GetComponentsInChildren<Renderer>();
+        SetPlayerVisible(false);
+
+        controller.SetDriver(true);
         if (vision != null)
-            vision.Show(seat);
-        state = State.Seated;
+            vision.Show(driverPoint);
+        driving = true;
     }
 
-    private void StandUp()
+    private void Leave()
     {
-        Transform sit = currentSeat.SitPoint;
-        Vector3 standPosition = sit.position + sit.forward * 0.7f;
-        standPosition.y = transform.TransformPoint(0f, floorHeight, 0f).y;
+        Vector3 outside = transform.TransformPoint(exitSide * (bodyHalfSize.x + 1f), 0f, transform.InverseTransformPoint(driverPoint.position).z);
+        outside.y = GroundHeight(outside);
 
         player.transform.SetParent(playerParent, true);
+        player.transform.rotation = Quaternion.LookRotation(transform.right * exitSide, Vector3.up);
+        if (playerCollider != null)
+            playerCollider.enabled = true;
         playerBody.isKinematic = false;
-        TeleportPlayer(standPosition);
+        TeleportPlayer(outside);
+        SetPlayerVisible(true);
         player.ExitSeat();
         if (playerWeapons != null)
             playerWeapons.enabled = true;
 
-        if (currentSeat.IsDriver)
-            controller.SetDriver(false);
-        currentSeat.Occupied = false;
-        currentSeat = null;
+        controller.SetDriver(false);
         if (vision != null)
-            vision.Show(null);
-        state = State.Inside;
+            vision.Hide();
+        driving = false;
     }
 
-    // Kondukter kalktiktan sonra tren fren yaparken icerdeki oyuncu trenle birlikte tasinir.
-    private void CarryPassenger(Vector3 oldPosition, Quaternion oldRotation, Vector3 newPosition, Quaternion newRotation)
+    private bool PlayerNearby()
     {
-        if (state != State.Inside || playerBody == null)
-            return;
-
-        Quaternion delta = newRotation * Quaternion.Inverse(oldRotation);
-        playerBody.position = newPosition + delta * (playerBody.position - oldPosition);
-        playerBody.rotation = delta * playerBody.rotation;
+        Vector3 local = transform.InverseTransformPoint(player.transform.position);
+        return Mathf.Abs(local.x) <= bodyHalfSize.x + boardRange && Mathf.Abs(local.z) <= bodyHalfSize.y + 0.5f;
     }
 
-    // feetY: ayaklarin basacagi yukseklik.
+    private void SetPlayerVisible(bool visible)
+    {
+        foreach (var r in playerRenderers)
+        {
+            if (r != null)
+                r.forceRenderingOff = !visible;
+        }
+    }
+
+    // feetPosition: ayaklarin basacagi nokta.
     private void TeleportPlayer(Vector3 feetPosition)
     {
-        Vector3 position = feetPosition + Vector3.up * FeetOffset();
+        Vector3 position = feetPosition + Vector3.up * feetOffset;
         playerBody.linearVelocity = Vector3.zero;
         playerBody.position = position;
         player.transform.position = position;
@@ -223,64 +166,14 @@ public class TrainBoarding : MonoBehaviour
     private float GroundHeight(Vector3 point)
     {
         var origin = point + Vector3.up * 5f;
+        float height = float.NegativeInfinity;
         foreach (var hit in Physics.RaycastAll(origin, Vector3.down, 20f, ~0, QueryTriggerInteraction.Ignore))
         {
             if (hit.transform.IsChildOf(transform) || hit.transform.IsChildOf(player.transform))
                 continue;
-            return hit.point.y;
+            height = Mathf.Max(height, hit.point.y); // RaycastAll sirasiz doner; en ustteki yuzey
         }
-        return transform.position.y;
-    }
-
-    private Transform NearestDoor(bool outside)
-    {
-        Transform best = null;
-        float bestDistance = doorRange;
-        foreach (var door in doors)
-        {
-            Vector3 side = door.position + door.forward * (outside ? 0.6f : -0.6f);
-            float distance = FlatDistance(player.transform.position, side);
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                best = door;
-            }
-        }
-        return best;
-    }
-
-    private TrainSeat NearestFreeSeat()
-    {
-        TrainSeat best = null;
-        float bestDistance = seatRange;
-        foreach (var seat in seats)
-        {
-            if (seat.Occupied)
-                continue;
-            float distance = FlatDistance(player.transform.position, seat.SitPoint.position);
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                best = seat;
-            }
-        }
-        return best;
-    }
-
-    private static float FlatDistance(Vector3 a, Vector3 b)
-    {
-        a.y = 0f;
-        b.y = 0f;
-        return Vector3.Distance(a, b);
-    }
-
-    private void SetCutaway(bool inside)
-    {
-        foreach (var r in hideWhenInside)
-        {
-            if (r != null)
-                r.forceRenderingOff = inside;
-        }
+        return float.IsNegativeInfinity(height) ? transform.position.y : height;
     }
 
     private void OnGUI()

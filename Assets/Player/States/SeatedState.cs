@@ -1,4 +1,4 @@
-// Trende koltukta oturma. Girisi ve cikisi TrainBoarding yonetir
+// Treni surerken kabinde oturma. Girisi ve cikisi TrainBoarding yonetir
 // (PlayerMovement.EnterSeat / ExitSeat); bu durumda hareket ve nisan yoktur.
 public class SeatedState : PlayerState
 {

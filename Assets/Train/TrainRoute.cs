@@ -12,7 +12,8 @@ public class TrainRoute : MonoBehaviour
 
     public float Length { get; private set; }
 
-    private void Awake()
+    // OnEnable: play mode'da kod yeniden derlenince de rota yeniden kurulur.
+    private void OnEnable()
     {
         Build();
     }

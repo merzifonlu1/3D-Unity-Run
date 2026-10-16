@@ -3,8 +3,8 @@ using UnityEngine;
 // Treni rota uzerinde sadece ileri ve geri hareket ettirir.
 // Vitesler: -1 (geri), 0 (dur), 1, 2, 3 (ileri). W vites yukseltir, S dusurur.
 // Hiz, yeni vitesin hizina aniden degil yavasca ulasir.
-// Tren sadece kondukter koltugunda biri varken (HasDriver) vites alir; surucu
-// yoksa vites 0'a alinir ve tren fren yaparak durur.
+// Tren sadece surucu kabindeyken (HasDriver) vites alir; surucu yoksa
+// vites 0'a alinir ve tren fren yaparak durur.
 [RequireComponent(typeof(Rigidbody))]
 public class TrainController : MonoBehaviour
 {
@@ -25,10 +25,6 @@ public class TrainController : MonoBehaviour
     public float Speed { get; private set; }
     public float Distance { get; private set; }
     public bool HasDriver { get; private set; }
-
-    // Her fizik adiminda cagrilir: (eski konum, eski donus, yeni konum, yeni donus).
-    // Trenin icinde yuruyen yolcular bununla trenle birlikte tasinir.
-    public event System.Action<Vector3, Quaternion, Vector3, Quaternion> Moved;
 
     private Rigidbody rb;
 
@@ -102,13 +98,9 @@ public class TrainController : MonoBehaviour
             Gear = 0;
         }
 
-        Vector3 oldPosition = rb.position;
-        Quaternion oldRotation = rb.rotation;
         route.Evaluate(Distance, out Vector3 position, out Vector3 forward);
-        Quaternion rotation = Quaternion.LookRotation(forward, Vector3.up);
         rb.MovePosition(position);
-        rb.MoveRotation(rotation);
-        Moved?.Invoke(oldPosition, oldRotation, position, rotation);
+        rb.MoveRotation(Quaternion.LookRotation(forward, Vector3.up));
     }
 
     private void OnGUI()
@@ -116,7 +108,7 @@ public class TrainController : MonoBehaviour
         if (!showControlPanel || !HasDriver)
             return;
 
-        // Kontrol ekrani: sadece kondukter koltugunda oturulurken gorunur.
+        // Kontrol ekrani: sadece tren surulurken gorunur.
         var area = new Rect(Screen.width / 2f - 160f, Screen.height - 130f, 320f, 110f);
         GUI.Box(area, "Tren Kontrol");
         GUILayout.BeginArea(new Rect(area.x + 12f, area.y + 24f, area.width - 24f, area.height - 30f));
@@ -128,7 +120,7 @@ public class TrainController : MonoBehaviour
         }
         GUILayout.EndHorizontal();
         GUILayout.Label($"Hiz: {Speed * 3.6f:0} km/sa");
-        GUILayout.Label("W: vites yukselt   S: vites dusur   E: kalk");
+        GUILayout.Label(Speed == 0f ? "W: vites yukselt   S: vites dusur   E: in" : "W: vites yukselt   S: vites dusur");
         GUILayout.EndArea();
     }
 

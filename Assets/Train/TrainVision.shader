@@ -1,4 +1,4 @@
-// Trenin icindeyken gorulmeyen yerleri karartan tam ekran gecis.
+// Tren surulurken gorulmeyen yerleri karartan tam ekran gecis.
 // URP renderer'daki "Train Vision" Full Screen Pass Renderer Feature bu shader'i kullanir.
 // Degerleri TrainVision.cs global olarak verir.
 Shader "Train/Vision Overlay"
@@ -26,7 +26,7 @@ Shader "Train/Vision Overlay"
             float _TrainVisionOn;
             float4x4 _TrainVisionWorldToLocal;
             float4 _TrainVisionHull;      // xy: ic alanin yari genisligi / yari uzunlugu
-            float4 _TrainVisionOrigin;    // xy: koltugun yerel x/z'si, z: gorus mesafesi, w: aci sayisi
+            float4 _TrainVisionOrigin;    // xy: surucunun yerel x/z'si, z: gorus mesafesi, w: aci sayisi
             float4 _TrainVisionSectors[4]; // x: merkez acisi (radyan), y: yari genislik (radyan)
 
             static const float EdgeSoftness = 0.06; // radyan
@@ -36,7 +36,7 @@ Shader "Train/Vision Overlay"
             {
                 float3 local = mul(_TrainVisionWorldToLocal, float4(worldPos, 1.0)).xyz;
 
-                // Trenin ici her zaman gorunur.
+                // Trenin kendisi her zaman gorunur.
                 if (!isSky && abs(local.x) <= _TrainVisionHull.x + HullMargin && abs(local.z) <= _TrainVisionHull.y + HullMargin)
                     return 1.0;
 

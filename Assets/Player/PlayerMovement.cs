@@ -134,8 +134,8 @@ public class PlayerMovement : MonoBehaviour
         CurrentState.Enter();
     }
 
-    // ------------------------------------------------------------------ Tren koltugu
-    // TrainBoarding oturtup kaldirirken cagirir.
+    // ------------------------------------------------------------------ Tren surucu kabini
+    // TrainBoarding trene bindirip indirirken cagirir.
     public void EnterSeat()
     {
         aiming = false;
